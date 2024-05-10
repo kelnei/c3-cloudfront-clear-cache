@@ -39,7 +39,7 @@ class Transient_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
 				if ( $value instanceof Hooks ) {
@@ -172,5 +172,4 @@ class Transient_Service {
 		$result = $this->transient->get_invalidation_target();
 		return $result;
 	}
-
 }

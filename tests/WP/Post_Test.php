@@ -26,18 +26,18 @@ class Post_Test extends \WP_UnitTestCase {
         $this->assertEquals( $expected, $result );
     }
 
-    public function provide_get_the_post_term_links_test_case() {
+    public static function provide_get_the_post_term_links_test_case() {
         return [
             [
-                $this->factory->post->create_and_get( array(
+                self::factory()->post->create_and_get( array(
                     'post_status' => 'publish',
-                    'post_name' => 'hello-world',
+                    'post_name' => 'hello-world-3',
                 ) ),
                 []
             ],
         ];
     }
-    
+
     /**
      * @dataProvider provide_parse_url_test_case
      */

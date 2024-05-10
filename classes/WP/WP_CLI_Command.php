@@ -41,7 +41,7 @@ class WP_CLI_Command extends \WP_CLI_Command {
 	 * @param array  $assoc_args WP-CLI Command Option.
 	 * @since 2.3.0
 	 */
-	function flush( $args, $assoc_args ) {
+	public function flush( $args, $assoc_args ) {
 		WP_CLI::line( 'Start to Clear CloudFront Cache...' );
 		if ( empty( $args ) ) {
 			WP_CLI::error( 'Please input parameter:post_id(numeric) or all' );
@@ -105,7 +105,7 @@ class WP_CLI_Command extends \WP_CLI_Command {
 	 * @param array  $assoc_args WP-CLI Command Option.
 	 * @since 2.4.0
 	 */
-	function update( $args, $assoc_args ) {
+	public function update( $args, $assoc_args ) {
 		if ( 1 > count( $args ) ) {
 			WP_CLI::error( 'No type serected' );
 		} elseif ( 2 > count( $args ) ) {

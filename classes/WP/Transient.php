@@ -93,5 +93,4 @@ class Transient {
 	public function delete_invalidation_target() {
 		return $this->delete_transient( self::C3_CRON_INDALITATION_TARGET );
 	}
-
 }

@@ -34,6 +34,13 @@ class Cron_Service {
 	private $transient_service;
 
 	/**
+	 * CloudFront service.
+	 *
+	 * @var AWS\CloudFront_Service
+	 */
+	private $cf_service;
+
+	/**
 	 * Debug flag
 	 *
 	 * @var boolean
@@ -45,7 +52,7 @@ class Cron_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		$this->hook_service      = new WP\Hooks();
 		$this->transient_service = new WP\Transient_Service();
 		$this->cf_service        = new AWS\CloudFront_Service();

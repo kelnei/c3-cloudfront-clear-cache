@@ -33,7 +33,7 @@ class Settings {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		$this->hook_service = new WP\Hooks();
 
 		if ( $args && ! empty( $args ) ) {
@@ -48,9 +48,9 @@ class Settings {
 		$this->hook_service->add_filter(
 			'amimoto_c3_add_settings',
 			function () {
-				require_once( C3_PLUGIN_PATH . '/templates/Plugin_Options.php' );
-				require_once( C3_PLUGIN_PATH . '/templates/Manually_Invalidation.php' );
-				require_once( C3_PLUGIN_PATH . '/templates/Invalidation_Logs.php' );
+				require_once C3_PLUGIN_PATH . '/templates/Plugin_Options.php';
+				require_once C3_PLUGIN_PATH . '/templates/Manually_Invalidation.php';
+				require_once C3_PLUGIN_PATH . '/templates/Invalidation_Logs.php';
 			}
 		);
 		/**
@@ -72,7 +72,7 @@ class Settings {
 			'cloudfront_clear_cache',
 			Constants::MENU_ID,
 			function () {
-				require_once( C3_PLUGIN_PATH . '/templates/Settings.php' );
+				require_once C3_PLUGIN_PATH . '/templates/Settings.php';
 			}
 		);
 
@@ -102,7 +102,7 @@ class Settings {
 	 *
 	 * @param mixed $args form parameter.
 	 */
-	function filter_and_escape( $args ) {
+	public function filter_and_escape( $args ) {
 		$allow_keys = array(
 			Constants::DISTRIBUTION_ID,
 			Constants::ACCESS_KEY,

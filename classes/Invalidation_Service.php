@@ -49,6 +49,20 @@ class Invalidation_Service {
 	private $invalidation_batch;
 
 	/**
+	 * CloudFront service.
+	 *
+	 * @var AWS\CloudFront_Service
+	 */
+	private $cf_service;
+
+	/**
+	 * Service to show admin messages
+	 *
+	 * @var WP\Admin_Notice
+	 */
+	private $notice;
+
+	/**
 	 * Debug flag
 	 *
 	 * @var boolean
@@ -60,7 +74,7 @@ class Invalidation_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		$this->hook_service       = new WP\Hooks();
 		$this->option_service     = new WP\Options_Service();
 		$this->invalidation_batch = new AWS\Invalidation_Batch_Service();
