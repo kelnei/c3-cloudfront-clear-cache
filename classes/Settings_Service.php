@@ -56,7 +56,7 @@ class Settings_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		$this->hook_service    = new WP\Hooks();
 		$this->env             = new WP\Environment();
 		$this->options_service = new WP\Options_Service();

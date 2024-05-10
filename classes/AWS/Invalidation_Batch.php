@@ -102,5 +102,4 @@ class Invalidation_Batch {
 			'InvalidationBatch' => $this->get_invalidation_batch(),
 		);
 	}
-
 }

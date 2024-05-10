@@ -40,7 +40,7 @@ class Invalidation_Batch_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
 				if ( $value instanceof Hooks ) {

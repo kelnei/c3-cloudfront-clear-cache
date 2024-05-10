@@ -54,10 +54,11 @@ class Invalidation_Batch_Service_Test extends \WP_UnitTestCase {
         $result = $target->create_batch_by_post( 'localhost', 'EXXX', $post );
         $this->assertEquals( $expected, $result[ 'InvalidationBatch' ][ 'Paths' ] );
     }
-    public function provide_overwrite_invalidation_item_by_post_name_test_case() {
+
+    public static function provide_overwrite_invalidation_item_by_post_name_test_case() {
         return [
             [
-                $this->factory->post->create_and_get( array(
+                self::factory()->post->create_and_get( array(
                     'post_status' => 'publish',
                     'post_name' => 'should-overwritten',
                 ) ),
@@ -69,7 +70,7 @@ class Invalidation_Batch_Service_Test extends \WP_UnitTestCase {
                 ]
             ],
             [
-                $this->factory->post->create_and_get( array(
+                self::factory()->post->create_and_get( array(
                     'post_status' => 'publish',
                     'post_name' => 'should-not-overwritten',
                 ) ),
@@ -120,30 +121,30 @@ class Invalidation_Batch_Service_Test extends \WP_UnitTestCase {
         $result = $target->create_batch_by_posts( 'localhost', 'EXXXX', $posts );
         $this->assertEquals( $expected, $result[ 'InvalidationBatch' ][ 'Paths' ] );
     }
-    public function provide_create_batch_by_posts_test_case() {
+    public static function provide_create_batch_by_posts_test_case() {
         return [
             [
                 [
-                    $this->factory->post->create_and_get( array(
+                    self::factory()->post->create_and_get( array(
                         'post_status' => 'publish',
-                        'post_name' => 'hello-world',
+                        'post_name' => 'hello-world-2',
                     ) )
                 ],
                 [
                     "Items" => [
                         "localhost",
-                        "/hello-world/*"
+                        "/hello-world-2/*"
                     ],
                     "Quantity" => 2
                 ]
                 ],
                 [
                     [
-                        $this->factory->post->create_and_get( array(
+                        self::factory()->post->create_and_get( array(
                             'post_status' => 'publish',
                             'post_name' => 'see-you',
                         ) ),
-                        $this->factory->post->create_and_get( array(
+                        self::factory()->post->create_and_get( array(
                             'post_status' => 'trash',
                             'post_name' => 'good-bye',
                         ) )
@@ -159,5 +160,5 @@ class Invalidation_Batch_Service_Test extends \WP_UnitTestCase {
                 ]
          ];
     }
-    
+
 }

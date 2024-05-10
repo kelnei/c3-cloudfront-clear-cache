@@ -1,5 +1,4 @@
 {
-    "plugins": [
-        "."
-    ]
+  "core": null,
+  "plugins": ["."]
 }

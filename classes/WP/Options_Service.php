@@ -48,7 +48,7 @@ class Options_Service {
 	 *
 	 * @param mixed ...$args Inject class.
 	 */
-	function __construct( ...$args ) {
+	public function __construct( ...$args ) {
 		$this->hook_service = new Hooks();
 		$this->env          = new Environment();
 		$this->options      = new Options();

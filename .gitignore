@@ -1,4 +1,5 @@
 vendor/
+.wp-env.override.json
 .DS_Store
 phpcs.xml
 phpunit.xml
