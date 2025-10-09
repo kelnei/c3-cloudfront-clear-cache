@@ -115,4 +115,28 @@ class WP_Mock_Helper {
 		
 		return $mock_post;
 	}
-} 
+
+	/**
+	 * Create mock Debug Logger service
+	 */
+	public static function create_mock_debug_logger() {
+		$mock_logger = \Mockery::mock( 'C3_CloudFront_Cache_Controller\WP\Debug_Logger' );
+		
+		$mock_logger->shouldReceive( 'should_log_cron_operations' )
+			->andReturn( false );
+		
+		$mock_logger->shouldReceive( 'should_log_invalidation_params' )
+			->andReturn( false );
+		
+		$mock_logger->shouldReceive( 'log_cron_start' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_cron_skip' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_cron_complete' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_cron_registration_start' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_cron_registration_skip' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_cron_registration_complete' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_invalidation_params' )->andReturn( true );
+		$mock_logger->shouldReceive( 'log_invalidation_request' )->andReturn( true );
+		
+		return $mock_logger;
+	}
+}   

@@ -44,6 +44,13 @@ class CloudFront_Service {
 	private $hook_service;
 
 	/**
+	 * Debug logger service
+	 *
+	 * @var WP\Debug_Logger
+	 */
+	private $debug_logger;
+
+	/**
 	 * Inject a external services
 	 *
 	 * @param mixed ...$args Inject class.
@@ -57,6 +64,8 @@ class CloudFront_Service {
 					$this->hook_service = $value;
 				} elseif ( $value instanceof WP\Environment ) {
 					$this->env = $value;
+				} elseif ( $value instanceof WP\Debug_Logger ) {
+					$this->debug_logger = $value;
 				}
 			}
 		}
@@ -68,6 +77,9 @@ class CloudFront_Service {
 		}
 		if ( ! $this->options_service ) {
 			$this->options_service = new WP\Options_Service();
+		}
+		if ( ! $this->debug_logger ) {
+			$this->debug_logger = new WP\Debug_Logger();
 		}
 	}
 
@@ -251,11 +263,11 @@ class CloudFront_Service {
 		$distribution_id = $params['DistributionId'];
 		$paths           = $params['InvalidationBatch']['Paths']['Items'];
 
-		if ( $this->hook_service->apply_filters( 'c3_log_invalidation_params', $this->get_debug_setting( Constants::DEBUG_LOG_INVALIDATION_PARAMS ) ) ) {
-			error_log( 'C3 CloudFront Invalidation Request - Distribution ID: ' . $distribution_id );
-			error_log( 'C3 CloudFront Invalidation Request - Paths: ' . print_r( $paths, true ) );
-			error_log( 'C3 CloudFront Invalidation Request - Full Params: ' . print_r( $params, true ) );
-		}
+		$this->debug_logger->log_invalidation_request( array(
+			'distribution_id' => $distribution_id,
+			'paths' => $paths,
+			'full_params' => $params,
+		) );
 
 		$result = $client->create_invalidation( $distribution_id, $paths );
 			return $result;
@@ -379,15 +391,4 @@ class CloudFront_Service {
 		}
 	}
 
-	/**
-	 * Get debug setting value
-	 *
-	 * @param string $setting_key Debug setting key.
-	 * @return boolean Debug setting value.
-	 */
-	private function get_debug_setting( $setting_key ) {
-		$debug_options = get_option( Constants::DEBUG_OPTION_NAME, array() );
-		$value = isset( $debug_options[ $setting_key ] ) ? $debug_options[ $setting_key ] : false;
-		return $value;
-	}
 }

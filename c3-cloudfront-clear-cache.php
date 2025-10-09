@@ -24,8 +24,9 @@ use C3_CloudFront_Cache_Controller\AWS;
  * Load classes and initialize services
  */
 function c3_init() {
-	new C3_CloudFront_Cache_Controller\Invalidation_Service();
-	new C3_CloudFront_Cache_Controller\Cron_Service();
+	$debug_logger = new C3_CloudFront_Cache_Controller\WP\Debug_Logger();
+	new C3_CloudFront_Cache_Controller\Invalidation_Service( $debug_logger );
+	new C3_CloudFront_Cache_Controller\Cron_Service( $debug_logger );
 	new C3_CloudFront_Cache_Controller\Settings_Service();
 	new C3_CloudFront_Cache_Controller\Views\Settings();
 	new C3_CloudFront_Cache_Controller\Views\Debug_Settings();
