@@ -141,7 +141,7 @@ class Debug_Logger {
 	 * @param array $context Additional context data.
 	 */
 	public function log_cron_registration_start( $context = array() ) {
-		if ( ! $this->log_invalidation_params ) {
+		if ( ! $this->log_cron_operations ) {
 			return;
 		}
 		error_log( '===== C3 CRON Job registration [START] ===' );
@@ -157,7 +157,7 @@ class Debug_Logger {
 	 * @param array  $context Additional context data.
 	 */
 	public function log_cron_registration_skip( $reason, $context = array() ) {
-		if ( ! $this->log_invalidation_params ) {
+		if ( ! $this->log_cron_operations ) {
 			return;
 		}
 		error_log( $reason );
@@ -172,7 +172,7 @@ class Debug_Logger {
 	 * @param array $context Additional context data.
 	 */
 	public function log_cron_registration_complete( $context = array() ) {
-		if ( ! $this->log_invalidation_params ) {
+		if ( ! $this->log_cron_operations ) {
 			return;
 		}
 		error_log( '===== C3 CRON Job registration [COMPLETE] ===' );
