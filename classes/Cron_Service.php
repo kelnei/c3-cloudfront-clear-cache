@@ -56,8 +56,8 @@ class Cron_Service {
 	function __construct( ...$args ) {
 		$this->hook_service      = new WP\Hooks();
 		$this->transient_service = new WP\Transient_Service();
-		$this->cf_service        = new AWS\CloudFront_Service();
-		$this->debug_logger      = new WP\Debug_Logger();
+		$this->debug_logger      = null;
+		$this->cf_service        = null;
 
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
@@ -71,6 +71,12 @@ class Cron_Service {
 					$this->debug_logger = $value;
 				}
 			}
+		}
+		if ( ! $this->debug_logger ) {
+			$this->debug_logger = new WP\Debug_Logger();
+		}
+		if ( ! $this->cf_service ) {
+			$this->cf_service = new AWS\CloudFront_Service( $this->debug_logger );
 		}
 		$this->hook_service->add_action(
 			'c3_cron_invalidation',

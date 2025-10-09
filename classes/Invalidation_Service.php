@@ -88,9 +88,9 @@ class Invalidation_Service {
 		$this->option_service     = new WP\Options_Service();
 		$this->invalidation_batch = new AWS\Invalidation_Batch_Service();
 		$this->transient_service  = new WP\Transient_Service();
-		$this->cf_service         = new AWS\CloudFront_Service();
 		$this->notice             = new WP\Admin_Notice();
-		$this->debug_logger       = new WP\Debug_Logger();
+		$this->debug_logger       = null;
+		$this->cf_service         = null;
 
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
@@ -110,6 +110,12 @@ class Invalidation_Service {
 					$this->debug_logger = $value;
 				}
 			}
+		}
+		if ( ! $this->debug_logger ) {
+			$this->debug_logger = new WP\Debug_Logger();
+		}
+		if ( ! $this->cf_service ) {
+			$this->cf_service = new AWS\CloudFront_Service( $this->debug_logger );
 		}
 		$this->hook_service->add_action(
 			'transition_post_status',
