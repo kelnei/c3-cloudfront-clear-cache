@@ -61,13 +61,11 @@ class Debug_Settings_Integration_Test extends TestCase {
 	 * @since 7.3.0
 	 */
 	public function test_debug_filters_use_correct_names() {
-		// Enable debug settings for both invalidation parameters and cron register task.
 		update_option( Constants::DEBUG_OPTION_NAME, array(
 			Constants::DEBUG_LOG_INVALIDATION_PARAMS => true,
 			Constants::DEBUG_LOG_CRON_REGISTER_TASK => true
 		) );
 
-		// Set up mock services required for testing.
 		$mock_env = WP_Mock_Helper::create_mock_environment( 'E123456789' );
 		$mock_options = WP_Mock_Helper::create_mock_options_service( array(
 			'distribution_id' => 'E123456789',
@@ -76,29 +74,42 @@ class Debug_Settings_Integration_Test extends TestCase {
 		) );
 		$mock_hooks = WP_Mock_Helper::create_mock_hooks_service();
 
-		// Test Invalidation_Service uses the correct filter name.
-		$invalidation_service = new Invalidation_Service( $mock_env, $mock_options, $mock_hooks );
+		$debug_logger = new \C3_CloudFront_Cache_Controller\WP\Debug_Logger( $mock_hooks );
+		$reflection = new ReflectionClass( $debug_logger );
+		
+		$cron_property = $reflection->getProperty( 'log_cron_operations' );
+		$cron_property->setAccessible( true );
+		$cron_debug = $cron_property->getValue( $debug_logger );
+		$this->assertTrue( $cron_debug, 'Debug_Logger should apply c3_log_cron_invalidation_task filter' );
+		
+		$invalidation_property = $reflection->getProperty( 'log_invalidation_params' );
+		$invalidation_property->setAccessible( true );
+		$invalidation_debug = $invalidation_property->getValue( $debug_logger );
+		$this->assertTrue( $invalidation_debug, 'Debug_Logger should apply c3_log_invalidation_params filter' );
+
+		$invalidation_service = new Invalidation_Service( $mock_env, $mock_options, $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $invalidation_service );
-		$debug_property = $reflection->getProperty( 'log_invalidation_params' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
 		$debug_property->setAccessible( true );
-		$invalidation_debug = $debug_property->getValue( $invalidation_service );
-		$this->assertTrue( $invalidation_debug, 'Invalidation_Service should use c3_log_invalidation_params filter' );
+		$logger = $debug_property->getValue( $invalidation_service );
+		$this->assertInstanceOf( 'C3_CloudFront_Cache_Controller\WP\Debug_Logger', $logger );
+		$this->assertTrue( $logger->should_log_invalidation_params() );
 
-		// Test Cron_Service uses the correct filter name.
-		$cron_service = new Cron_Service( $mock_hooks );
+		$cron_service = new Cron_Service( $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $cron_service );
-		$debug_property = $reflection->getProperty( 'log_cron_register_task' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
 		$debug_property->setAccessible( true );
-		$cron_debug = $debug_property->getValue( $cron_service );
-		$this->assertTrue( $cron_debug, 'Cron_Service should use c3_log_cron_invalidation_task filter' );
+		$logger = $debug_property->getValue( $cron_service );
+		$this->assertInstanceOf( 'C3_CloudFront_Cache_Controller\WP\Debug_Logger', $logger );
+		$this->assertTrue( $logger->should_log_cron_operations() );
 
-		// Test CloudFront_Service uses the correct filter name.
-		$cf_service = new CloudFront_Service( $mock_env, $mock_options, $mock_hooks );
+		$cf_service = new CloudFront_Service( $mock_env, $mock_options, $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $cf_service );
-		$debug_method = $reflection->getMethod( 'get_debug_setting' );
-		$debug_method->setAccessible( true );
-		$cf_debug = $debug_method->invoke( $cf_service, Constants::DEBUG_LOG_INVALIDATION_PARAMS );
-		$this->assertTrue( $cf_debug, 'CloudFront_Service should use c3_log_invalidation_params filter' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
+		$debug_property->setAccessible( true );
+		$logger = $debug_property->getValue( $cf_service );
+		$this->assertInstanceOf( 'C3_CloudFront_Cache_Controller\WP\Debug_Logger', $logger );
+		$this->assertTrue( $logger->should_log_invalidation_params() );
 	}
 
 	/**
@@ -111,13 +122,11 @@ class Debug_Settings_Integration_Test extends TestCase {
 	 * @since 7.3.0
 	 */
 	public function test_debug_filters_work_when_disabled() {
-		// Disable debug settings for both invalidation parameters and cron register task.
 		update_option( Constants::DEBUG_OPTION_NAME, array(
 			Constants::DEBUG_LOG_INVALIDATION_PARAMS => false,
 			Constants::DEBUG_LOG_CRON_REGISTER_TASK => false
 		) );
 
-		// Set up mock services required for testing.
 		$mock_env = WP_Mock_Helper::create_mock_environment( 'E123456789' );
 		$mock_options = WP_Mock_Helper::create_mock_options_service( array(
 			'distribution_id' => 'E123456789',
@@ -126,28 +135,29 @@ class Debug_Settings_Integration_Test extends TestCase {
 		) );
 		$mock_hooks = WP_Mock_Helper::create_mock_hooks_service();
 
-		// Test Invalidation_Service respects disabled setting.
-		$invalidation_service = new Invalidation_Service( $mock_env, $mock_options, $mock_hooks );
+		$debug_logger = new \C3_CloudFront_Cache_Controller\WP\Debug_Logger( $mock_hooks );
+		$this->assertFalse( $debug_logger->should_log_cron_operations() );
+		$this->assertFalse( $debug_logger->should_log_invalidation_params() );
+
+		$invalidation_service = new Invalidation_Service( $mock_env, $mock_options, $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $invalidation_service );
-		$debug_property = $reflection->getProperty( 'log_invalidation_params' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
 		$debug_property->setAccessible( true );
-		$invalidation_debug = $debug_property->getValue( $invalidation_service );
-		$this->assertFalse( $invalidation_debug, 'Invalidation_Service should be disabled when setting is false' );
+		$logger = $debug_property->getValue( $invalidation_service );
+		$this->assertFalse( $logger->should_log_invalidation_params() );
 
-		// Test Cron_Service respects disabled setting.
-		$cron_service = new Cron_Service( $mock_hooks );
+		$cron_service = new Cron_Service( $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $cron_service );
-		$debug_property = $reflection->getProperty( 'log_cron_register_task' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
 		$debug_property->setAccessible( true );
-		$cron_debug = $debug_property->getValue( $cron_service );
-		$this->assertFalse( $cron_debug, 'Cron_Service should be disabled when setting is false' );
+		$logger = $debug_property->getValue( $cron_service );
+		$this->assertFalse( $logger->should_log_cron_operations() );
 
-		// Test CloudFront_Service respects disabled setting.
-		$cf_service = new CloudFront_Service( $mock_env, $mock_options, $mock_hooks );
+		$cf_service = new CloudFront_Service( $mock_env, $mock_options, $mock_hooks, $debug_logger );
 		$reflection = new ReflectionClass( $cf_service );
-		$debug_method = $reflection->getMethod( 'get_debug_setting' );
-		$debug_method->setAccessible( true );
-		$cf_debug = $debug_method->invoke( $cf_service, Constants::DEBUG_LOG_INVALIDATION_PARAMS );
-		$this->assertFalse( $cf_debug, 'CloudFront_Service should be disabled when setting is false' );
+		$debug_property = $reflection->getProperty( 'debug_logger' );
+		$debug_property->setAccessible( true );
+		$logger = $debug_property->getValue( $cf_service );
+		$this->assertFalse( $logger->should_log_invalidation_params() );
 	}
 }

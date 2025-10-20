@@ -35,11 +35,11 @@ class Cron_Service {
 	private $transient_service;
 
 	/**
-	 * Log cron register task flag
+	 * Debug logger service
 	 *
-	 * @var boolean
+	 * @var WP\Debug_Logger
 	 */
-	private $log_cron_register_task;
+	private $debug_logger;
 
 	/**
 	 * CloudFront service
@@ -56,7 +56,8 @@ class Cron_Service {
 	function __construct( ...$args ) {
 		$this->hook_service      = new WP\Hooks();
 		$this->transient_service = new WP\Transient_Service();
-		$this->cf_service        = new AWS\CloudFront_Service();
+		$this->debug_logger      = null;
+		$this->cf_service        = null;
 
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
@@ -66,8 +67,16 @@ class Cron_Service {
 					$this->transient_service = $value;
 				} elseif ( $value instanceof AWS\CloudFront_Service ) {
 					$this->cf_service = $value;
+				} elseif ( $value instanceof WP\Debug_Logger ) {
+					$this->debug_logger = $value;
 				}
 			}
+		}
+		if ( ! $this->debug_logger ) {
+			$this->debug_logger = new WP\Debug_Logger();
+		}
+		if ( ! $this->cf_service ) {
+			$this->cf_service = new AWS\CloudFront_Service( $this->debug_logger );
 		}
 		$this->hook_service->add_action(
 			'c3_cron_invalidation',
@@ -76,7 +85,6 @@ class Cron_Service {
 				'run_schedule_invalidate',
 			)
 		);
-		$this->log_cron_register_task = $this->hook_service->apply_filters( 'c3_log_cron_invalidation_task', $this->get_debug_setting( Constants::DEBUG_LOG_CRON_REGISTER_TASK ) );
 	}
 
 	/**
@@ -85,23 +93,15 @@ class Cron_Service {
 	 * @return boolean
 	 */
 	public function run_schedule_invalidate() {
-		if ( $this->log_cron_register_task ) {
-			error_log( '===== C3 Invalidation cron is started ===' );
-		}
+		$this->debug_logger->log_cron_start();
 		if ( $this->hook_service->apply_filters( 'c3_disabled_cron_retry', false ) ) {
-			if ( $this->log_cron_register_task ) {
-				error_log( '===== C3 Invalidation cron has been SKIPPED [Disabled] ===' );
-			}
+			$this->debug_logger->log_cron_skip( '===== C3 Invalidation cron has been SKIPPED [Disabled] ===' );
 			return false;
 		}
 		$invalidation_batch = $this->transient_service->load_invalidation_query();
-		if ( $this->log_cron_register_task ) {
-			error_log( print_r( $invalidation_batch, true ) );
-		}
+		$this->debug_logger->log_invalidation_params( '', array( $invalidation_batch ) );
 		if ( ! $invalidation_batch || empty( $invalidation_batch ) ) {
-			if ( $this->log_cron_register_task ) {
-				error_log( '===== C3 Invalidation cron has been SKIPPED [No Target Item] ===' );
-			}
+			$this->debug_logger->log_cron_skip( '===== C3 Invalidation cron has been SKIPPED [No Target Item] ===' );
 			return false;
 		}
 		$distribution_id = $this->cf_service->get_distribution_id();
@@ -109,15 +109,13 @@ class Cron_Service {
 			'DistributionId'    => esc_attr( $distribution_id ),
 			'InvalidationBatch' => $invalidation_batch,
 		);
-		if ( $this->log_cron_register_task ) {
-			error_log( print_r( $query, true ) );
-		}
+		$this->debug_logger->log_invalidation_params( '', array( $query ) );
 
 		/**
 		 * Execute the invalidation.
 		 */
 		$result = $this->cf_service->create_invalidation( $query );
-		if ( $this->log_cron_register_task ) {
+		if ( $this->debug_logger->should_log_cron_operations() ) {
 			if ( is_wp_error( $result ) ) {
 				error_log( 'C3 Cron: Invalidation failed: ' . $result->get_error_message() );
 			} else {
@@ -125,21 +123,8 @@ class Cron_Service {
 			}
 		}
 		$this->transient_service->delete_invalidation_query();
-		if ( $this->log_cron_register_task ) {
-			error_log( '===== C3 Invalidation cron has been COMPLETED ===' );
-		}
+		$this->debug_logger->log_cron_complete();
 		return true;
 	}
 
-	/**
-	 * Get debug setting value
-	 *
-	 * @param string $setting_key Debug setting key.
-	 * @return boolean Debug setting value.
-	 */
-	private function get_debug_setting( $setting_key ) {
-		$debug_options = get_option( Constants::DEBUG_OPTION_NAME, array() );
-		$value = isset( $debug_options[ $setting_key ] ) ? $debug_options[ $setting_key ] : false;
-		return $value;
-	}
 }

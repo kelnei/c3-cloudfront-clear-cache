@@ -64,11 +64,11 @@ class Invalidation_Service {
 	private $invalidation_batch;
 
 	/**
-	 * Log invalidation parameters flag
+	 * Debug logger service.
 	 *
-	 * @var boolean
+	 * @var WP\Debug_Logger
 	 */
-	private $log_invalidation_params;
+	private $debug_logger;
 
 	/**
 	 * Initialize the service, register WordPress hooks, and optionally inject dependencies.
@@ -88,8 +88,9 @@ class Invalidation_Service {
 		$this->option_service     = new WP\Options_Service();
 		$this->invalidation_batch = new AWS\Invalidation_Batch_Service();
 		$this->transient_service  = new WP\Transient_Service();
-		$this->cf_service         = new AWS\CloudFront_Service();
 		$this->notice             = new WP\Admin_Notice();
+		$this->debug_logger       = null;
+		$this->cf_service         = null;
 
 		if ( $args && ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
@@ -105,8 +106,16 @@ class Invalidation_Service {
 					$this->cf_service = $value;
 				} elseif ( $value instanceof WP\Admin_Notice ) {
 					$this->notice = $value;
+				} elseif ( $value instanceof WP\Debug_Logger ) {
+					$this->debug_logger = $value;
 				}
 			}
+		}
+		if ( ! $this->debug_logger ) {
+			$this->debug_logger = new WP\Debug_Logger();
+		}
+		if ( ! $this->cf_service ) {
+			$this->cf_service = new AWS\CloudFront_Service( $this->debug_logger );
 		}
 		$this->hook_service->add_action(
 			'transition_post_status',
@@ -140,7 +149,6 @@ class Invalidation_Service {
 				'handle_invalidation_details_ajax',
 			)
 		);
-		$this->log_invalidation_params = $this->hook_service->apply_filters( 'c3_log_invalidation_params', $this->get_debug_setting( Constants::DEBUG_LOG_INVALIDATION_PARAMS ) );
 	}
 
 	/**
@@ -196,34 +204,24 @@ class Invalidation_Service {
 	 * @return boolean If true, cron has been scheduled.
 	 */
 	public function register_cron_event( $query ) {
-		if ( $this->log_invalidation_params ) {
-			error_log( '===== C3 CRON Job registration [START] ===' );
-		}
+		$this->debug_logger->log_cron_registration_start();
 		if ( ! isset( $query['Paths'] ) || ! isset( $query['Paths']['Items'] ) || $query['Paths']['Items'][0] === '/*' ) {
-			if ( $this->log_invalidation_params ) {
-				error_log( '===== C3 CRON Job registration [SKIP | NO ITEM] ===' );
-			}
+			$this->debug_logger->log_cron_registration_skip( '===== C3 CRON Job registration [SKIP | NO ITEM] ===' );
 			return false;
 		}
 		if ( $this->hook_service->apply_filters( 'c3_disabled_cron_retry', false ) ) {
-			if ( $this->log_invalidation_params ) {
-				error_log( '===== C3 CRON Job registration [SKIP | DISABLED] ===' );
-			}
+			$this->debug_logger->log_cron_registration_skip( '===== C3 CRON Job registration [SKIP | DISABLED] ===' );
 			return false;
 		}
 		$query = $this->transient_service->save_invalidation_query( $query );
 
 		$interval_minutes = $this->hook_service->apply_filters( 'c3_invalidation_cron_interval', 1 );
 		$time             = time() + MINUTE_IN_SECONDS * $interval_minutes;
-		if ( $this->log_invalidation_params ) {
-			error_log( print_r( $query, true ) );
-		}
+		$this->debug_logger->log_invalidation_params( '', array( $query ) );
 
 		$result = wp_schedule_single_event( $time, 'c3_cron_invalidation' );
 
-		if ( $this->log_invalidation_params ) {
-			error_log( '===== C3 CRON Job registration [COMPLETE] ===' );
-		}
+		$this->debug_logger->log_cron_registration_complete();
 		return $result;
 	}
 
@@ -272,10 +270,10 @@ class Invalidation_Service {
 			return $query;
 		}
 
-		if ( $this->hook_service->apply_filters( 'c3_log_invalidation_params', $this->get_debug_setting( Constants::DEBUG_LOG_INVALIDATION_PARAMS ) ) ) {
-			error_log( 'C3 Invalidation Started - Query: ' . print_r( $query, true ) );
-			error_log( 'C3 Invalidation Started - Force: ' . ( $force ? 'true' : 'false' ) );
-		}
+		$this->debug_logger->log_invalidation_request( array(
+			'query' => $query,
+			'force' => $force,
+		) );
 
 		if ( $this->transient_service->should_regist_cron_job() && false === $force ) {
 			/**
@@ -494,15 +492,4 @@ class Invalidation_Service {
 		return $this->invalidate_by_query( $query );
 	}
 
-	/**
-	 * Get debug setting value
-	 *
-	 * @param string $setting_key Debug setting key.
-	 * @return boolean Debug setting value.
-	 */
-	private function get_debug_setting( $setting_key ) {
-		$debug_options = get_option( Constants::DEBUG_OPTION_NAME, array() );
-		$value = isset( $debug_options[ $setting_key ] ) ? $debug_options[ $setting_key ] : false;
-		return $value;
-	}
 }
