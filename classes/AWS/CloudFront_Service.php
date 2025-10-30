@@ -101,6 +101,19 @@ class CloudFront_Service {
 			);
 		}
 
+		if ( $this->should_use_ecs_role() ) {
+			$provider  = new ECS_Credential_Provider();
+			$ecs_creds = $provider->get_credentials();
+
+			if ( $ecs_creds ) {
+				return array(
+					'key'    => $ecs_creds['key'],
+					'secret' => $ecs_creds['secret'],
+					'token'  => $ecs_creds['token'],
+				);
+			}
+		}
+
 		if ( $this->should_use_instance_role() ) {
 			$metadata_service = new EC2_Metadata_Service();
 			$instance_creds   = $metadata_service->get_instance_credentials();
@@ -129,6 +142,19 @@ class CloudFront_Service {
 
 		$metadata_service = new EC2_Metadata_Service();
 		return $metadata_service->is_ec2_instance();
+	}
+
+	/**
+	 * Check if should use ECS task role
+	 *
+	 * @return bool
+	 */
+	private function should_use_ecs_role() {
+		if ( $this->hook_service->apply_filters( 'c3_has_ecs_task_role', false ) ) {
+			return true;
+		}
+
+		return ECS_Credential_Provider::should_use_ecs_credentials();
 	}
 
 	/**
@@ -328,14 +354,14 @@ class CloudFront_Service {
 
 			if ( isset( $result['Quantity'] ) && $result['Quantity'] > 0 && isset( $result['Items']['InvalidationSummary'] ) ) {
 				error_log( 'C3 CloudFront: Found ' . $result['Quantity'] . ' invalidations' );
-				
+
 				// InvalidationSummaryが単一のオブジェクトの場合は配列に変換
 				$invalidations = $result['Items']['InvalidationSummary'];
 				if ( ! is_array( $invalidations ) || ( isset( $invalidations[0] ) === false && isset( $invalidations['Id'] ) ) ) {
 					// 単一のオブジェクトの場合は配列にラップ
 					$invalidations = array( $invalidations );
 				}
-				
+
 				error_log( 'C3 CloudFront: Processed invalidations data: ' . print_r( $invalidations, true ) );
 				return $invalidations;
 			}
